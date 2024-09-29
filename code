@@ -1,0 +1,41 @@
+import subprocess
+import time
+import RPi.GPIO as GPIO
+import psutil
+
+GPIO.setmode(GPIO.BCM)
+GPIO.setup(12, GPIO.OUT)
+
+soft_pwm = GPIO.PWM(12, 100)
+pwm_active = False
+
+try:
+    while True:
+        temp_path = "/sys/devices/virtual/thermal/thermal_zone0/temp"
+    
+        try:
+            temperature_output = subprocess.check_output(['cat', temp_path], encoding='utf-8')
+            temperature = int(temperature_output.strip())
+            print(f"temp : {temperature} c")
+        
+            if temperature >= 50000:
+                 if not pwm_active:
+                  print("hot")
+                  soft_pwm.start(100)
+                  pwm_active = True
+            
+            elif temperature <= 45000:
+                  if pwm_active:
+                   print("pwm stop")
+                   soft_pwm.stop()
+                   pwm_active = False
+               
+        except Exception as e:
+            print("error {e}")
+        
+        time.sleep(1)
+
+except KeyboardInterrupt:
+    print("program")
+    soft_pwm.stop()
+    GPIO.cleanup()
